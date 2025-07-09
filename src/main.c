@@ -14,6 +14,7 @@ int main(void) {
     }
 
     server_run(listener);
+
     server_close(listener);
     logger_close();
 

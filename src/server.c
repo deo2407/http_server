@@ -11,10 +11,21 @@
 #include <netdb.h>
 #include <poll.h>
 
+#include <stdbool.h>
+#include <signal.h>
+
 #include "logger.h"
 #include "http.h"
 
 #define PORT "4000"   // Port we're listening on
+#define HTTP_BUF_SIZE 8192
+
+volatile sig_atomic_t stop = false;
+
+void handle_sigint(int sig) {
+    (void)sig;  // unused parameter
+    stop = true;
+}
 
 const char *inet_ntop2(void *addr, char *buf, size_t len) {
     struct sockaddr_storage *sas = addr;
@@ -114,7 +125,7 @@ void remove_from_pfds(int i, struct pollfd pfds[], int *fd_count) {
 void server_handle_client(int *fd_count,
         struct pollfd *pfds, int *pfd_i) {
     
-    char buf[1024];
+    char buf[HTTP_BUF_SIZE];
 
     int nbytes = recv(pfds[*pfd_i].fd, buf, sizeof buf, 0);
 
@@ -203,7 +214,8 @@ void server_run(int listener) {
     logger_log(LOG_INFO, "server started on socket %d", listener);
     logger_log(LOG_INFO, "waiting for connections...");
 
-    for(;;) {
+    signal(SIGINT, handle_sigint);
+    while (!stop) {
         int poll_count = poll(pfds, fd_count, -1);
 
         if (poll_count == -1) {
