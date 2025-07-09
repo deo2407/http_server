@@ -2,7 +2,7 @@
 #include "logger.h"
 
 int main(void) {
-    if (logger_init("log.txt") != 0) {
+    if (logger_init("server.log") != 0) {
         fprintf(stderr, "Logger init failed\n");
         return 1;
     }

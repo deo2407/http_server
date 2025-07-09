@@ -40,7 +40,7 @@ void logger_log(LogLevel level, const char *format, ...) {
     fprintf(log_file, "[%s] %s: %s\n", time_str, level_str, log_buffer);
     fflush(log_file);
 
-#ifdef LOGGER_CONSOLE
+#ifdef LOGGER_ENABLE_CONSOLE
     fprintf(stderr, "[%s] %s: %s\n", time_str, level_str, log_buffer);
     fflush(stderr);
 #endif

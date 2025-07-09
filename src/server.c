@@ -136,7 +136,7 @@ void server_handle_client(int *fd_count,
 
     } else {  
         buf[nbytes] = '\0';
-        logger_log(LOG_INFO, "recv from fd %d: %s", sender_fd, buf);
+        logger_log(LOG_INFO, "recv from fd %d:\n\n%s", sender_fd, buf);
 
         http_handle_request();
     }
