@@ -34,8 +34,8 @@ typedef struct {
     int status_code;      // e.g. 200, 400, 404
     char status_text[64]; // e.g. "OK", "FOUND", "Bad Request"
 
-    header_t headers[MAX_HEADERS];
-    int header_count;
+    char content_type[64];
+    char content_length[16];
 
     char *body;
     long body_length;
@@ -100,13 +100,17 @@ int http_parse_request(const char *request_buf, int size,
 void bad_response(response_t *response) {
     response->status_code = 404;
     strcpy(response->status_text, "Not Found");
-    response->header_count = 0;
 }
 
 int generate_content(const char *filename, response_t *response) {
     FILE *file = NULL;
     char *body;
-    file = fopen(filename, "rb");
+
+    // Generate the path
+    char filepath[64];
+    sprintf(filepath, "../public/%s", filename);
+
+    file = fopen(filepath, "rb");
     if (!file) {
         logger_perror("fopen");
         return -1;
@@ -130,16 +134,11 @@ int generate_content(const char *filename, response_t *response) {
 
     logger_log(LOG_INFO, "adding file %s to the response", filename);
 
-    response->header_count = 0; 
-    strcpy(response->headers[response->header_count].name, "Content-Type");
-    strcpy(response->headers[response->header_count].value, "text/html");
-    response->header_count++;
+    strcpy(response->content_type, "text/html");
     
     char size_str[10];
     sprintf(size_str, "%ld", file_size);
-    strcpy(response->headers[response->header_count].name, "Content-Length");
-    strcpy(response->headers[response->header_count].value, size_str);
-    response->header_count++;
+    strcpy(response->content_length, size_str);
 
     response->body = body;
     response->body_length = file_size;
@@ -147,17 +146,15 @@ int generate_content(const char *filename, response_t *response) {
     return 0;
 }
 
-void generate_response(response_t *response, request_t *request) {
+void generate_get_response(response_t *response, request_t *request) {
     strcpy(response->http_version, "HTTP/1.0");
 
     if (strcmp(request->path, "/") == 0) {
         response->status_code = 200;
         strcpy(response->status_text, "OK");
-        response->header_count = 0;
 
         return;
     } 
-    
 
     int res = generate_content(request->path, response);
     if (res < 0) {
@@ -168,18 +165,25 @@ void generate_response(response_t *response, request_t *request) {
     strcpy(response->status_text, "OK");
 }
 
+void generate_response(response_t *response, request_t *request) {
+    if (strcmp(request->method, "GET") == 0) {
+        generate_get_response(response, request);
+    }
+}
+
 int send_response(int sender_fd, response_t *response) {
     char response_str[4096];
     int len = snprintf(response_str, sizeof(response_str),
         "HTTP/1.1 %d %s\r\n"
         "Content-Length: %s\r\n"
-        "Content-Type: text/html\r\n"
+        "Content-Type: %s\r\n"
         "\r\n"
         "%s", 
         response->status_code,
         response->status_text,
-        response->headers[0].value,
-        response->headers[1].value);
+        response->content_length,
+        response->content_type,
+        response->body);
 
     send_all(sender_fd, response_str, len);
     return 0;
