@@ -58,3 +58,4 @@ void logger_close() {
         log_file = NULL;
     }
 }
+

@@ -1,7 +1,6 @@
 #include <stddef.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <string.h>
 #include <sys/poll.h>
 #include <unistd.h>
 #include <sys/types.h>
@@ -193,6 +192,7 @@ void server_process_connections(int listener, int *fd_count, int *fd_size,
 }
 
 int server_init(void) {
+    // Initialize and bind to a socket
     int listener = server_get_listener();
 
     if (listener == -1) {
