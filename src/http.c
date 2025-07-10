@@ -26,7 +26,7 @@ typedef struct {
     int header_count;
 
     char *body;
-    size_t body_lenght;
+    size_t body_length;
 } request_t;
 
 typedef struct {
@@ -74,20 +74,23 @@ int http_parse_request(const char *request_buf, int size,
     char *method = strtok(request_line, " ");
     if (!(strcmp(method, "GET") == 0 || strcmp(method, "POST") == 0 ||
             strcmp(method, "HEAD") == 0)) {
+        logger_log(LOG_INFO, "Unsupported HTTP method: %s", method);
         return -1;
     }
     strncpy(req->method, method, sizeof(req->method) - 1);
 
     // Check path
     char *path = strtok(NULL, " ");
-    if (!path) 
+    if (!path) {
         return -1;
+    }
     strncpy(req->path, path, sizeof(req->path) - 1);
     
     // Check version
     char *version = strtok(NULL, " ");
     // Version checking needs to be improved
-    if (!(strcmp(version, "HTTP/") == 0)) {
+    if (strncmp(version, "HTTP/", 5) != 0) {
+        logger_log(LOG_INFO, "Unsupported HTTP version: %s", version);
         return -1;
     }
     strncpy(req->http_version, version, sizeof(req->http_version) - 1);
@@ -106,9 +109,16 @@ int generate_content(const char *filename, response_t *response) {
     FILE *file = NULL;
     char *body;
 
+    char *pos = strstr(filename, "..");
+    // Attackers can only access public content
+    if (pos) {
+        return -1;
+    }
+
     // Generate the path
     char filepath[64];
-    sprintf(filepath, "../public/%s", filename);
+    sprintf(filepath, "./public%s", filename);
+    printf("%s\n", filepath);
 
     file = fopen(filepath, "rb");
     if (!file) {
@@ -125,40 +135,48 @@ int generate_content(const char *filename, response_t *response) {
         return -1;
     }
 
-    body = (char *)malloc(file_size);
+    body = (char *)malloc(file_size+1);
     if (!body) {
         fclose(file);
         logger_perror("malloc");
         return -1;
     }
 
+    size_t bytes_read = fread(body, 1, file_size, file);
+    if (bytes_read != file_size) {
+        free(body);
+        fclose(file);
+        logger_perror("fread");
+        return -1;
+    }
+    body[file_size] = '\0';
+
     logger_log(LOG_INFO, "adding file %s to the response", filename);
 
     strcpy(response->content_type, "text/html");
     
-    char size_str[10];
+    char size_str[25];
     sprintf(size_str, "%ld", file_size);
     strcpy(response->content_length, size_str);
 
     response->body = body;
     response->body_length = file_size;
     
+    fclose(file);
     return 0;
 }
 
 void generate_get_response(response_t *response, request_t *request) {
     strcpy(response->http_version, "HTTP/1.0");
 
-    if (strcmp(request->path, "/") == 0) {
-        response->status_code = 200;
-        strcpy(response->status_text, "OK");
+     const char *filename = (strcmp(request->path, "/") == 0)
+        ? "/index.html"
+        : request->path;
 
-        return;
-    } 
-
-    int res = generate_content(request->path, response);
+    int res = generate_content(filename, response);
     if (res < 0) {
         bad_response(response);
+        return;
     }
 
     response->status_code = 200;
@@ -172,20 +190,19 @@ void generate_response(response_t *response, request_t *request) {
 }
 
 int send_response(int sender_fd, response_t *response) {
-    char response_str[4096];
-    int len = snprintf(response_str, sizeof(response_str),
+    char header_buf[512];
+    int len = snprintf(header_buf, sizeof(header_buf),
         "HTTP/1.1 %d %s\r\n"
         "Content-Length: %s\r\n"
         "Content-Type: %s\r\n"
-        "\r\n"
-        "%s", 
+        "\r\n", 
         response->status_code,
         response->status_text,
         response->content_length,
-        response->content_type,
-        response->body);
+        response->content_type);
 
-    send_all(sender_fd, response_str, len);
+    send_all(sender_fd, header_buf, len);
+    send_all(sender_fd, response->body, response->body_length);
     return 0;
 }
 
@@ -209,5 +226,9 @@ void http_handle_request(int sender_fd, const char *request_buf, int size) {
     logger_log(LOG_INFO, "sending response with status code %d: %s",
             response->status_code, response->status_text);
     send_response(sender_fd, response);
+
+    free(response->body);
+    free(request);
+    free(response);
 }
 
