@@ -1,9 +1,60 @@
 <!DOCTYPE html>
-<html>
-    <head>
-        <title>Response</title>
-    </head>
-    <body>
-        <h1>Hello, World</h1>
-    </body>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Welcome</title>
+<style>
+  /* Rosebones theme with purple tones */
+  :root {
+    --background: #1a1a2e;      /* deep dark purple-blue */
+    --surface: #2e2a4a;         /* muted dark purple */
+    --primary: #a971a8;         /* soft purple-pink */
+    --text-primary: #d3c2dc;    /* light lavender */
+    --text-secondary: #b6a8bf;  /* muted grayish purple */
+    --shadow: rgba(169, 113, 168, 0.6);
+  }
+
+  body {
+    margin: 0;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--background);
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    height: 100vh;
+  }
+
+  .container {
+    background-color: var(--surface);
+    padding: 2.5rem 4rem;
+    border-radius: 15px;
+    box-shadow: 0 0 15px var(--shadow);
+    text-align: center;
+    max-width: 480px;
+    width: 90%;
+  }
+
+  h1 {
+    font-size: 3.2rem;
+    margin-bottom: 0.5rem;
+    color: var(--primary);
+    font-weight: 700;
+  }
+
+  p {
+    font-size: 1.25rem;
+    color: var(--text-secondary);
+    line-height: 1.5;
+  }
+</style>
+</head>
+<body>
+  <div class="container">
+    <h1>Welcome to My Server!</h1>
+    <p>Hello, visitor! Thanks for stopping by.</p>
+  </div>
+</body>
 </html>
+

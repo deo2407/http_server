@@ -105,6 +105,35 @@ void bad_response(response_t *response) {
     strcpy(response->status_text, "Not Found");
 }
 
+void generate_content_type(const char *filename, response_t *response) {
+    char *pos = strstr(filename, ".html");
+    if (pos) {
+        strcpy(response->content_type, "text/html");
+        return;
+    }
+
+    pos = strstr(filename, ".css");
+    if (pos) {
+        strcpy(response->content_type, "text/css");
+        return;
+    }
+
+    pos = strstr(filename, ".png");
+    if (pos) {
+        strcpy(response->content_type, "image/png");
+        return;
+    }
+    
+    pos = strstr(filename, ".jpeg");
+    char *pos2 = strstr(filename, "jpg");
+    if (pos || pos2) {
+        strcpy(response->content_type, "image/jpeg");
+        return;
+    }
+
+    strcpy(response->content_type, "text/plain");
+}
+
 int generate_content(const char *filename, response_t *response) {
     FILE *file = NULL;
     char *body;
@@ -151,10 +180,11 @@ int generate_content(const char *filename, response_t *response) {
     }
     body[file_size] = '\0';
 
-    logger_log(LOG_INFO, "adding file %s to the response", filename);
+    generate_content_type(filename, response);
 
-    strcpy(response->content_type, "text/html");
-    
+    logger_log(LOG_INFO, "adding file %s with type %s to the response", 
+            filename, response->content_type);
+
     char size_str[25];
     sprintf(size_str, "%ld", file_size);
     strcpy(response->content_length, size_str);
@@ -170,7 +200,7 @@ void generate_get_response(response_t *response, request_t *request) {
     strcpy(response->http_version, "HTTP/1.0");
 
      const char *filename = (strcmp(request->path, "/") == 0)
-        ? "/index.html"
+        ? "/hello_page.html"
         : request->path;
 
     int res = generate_content(filename, response);
