@@ -11,12 +11,3 @@ Built for simplicity, learning, and experimentation — compiled with a `Makefil
 - Simple build process using `make`
 - Fast and lightweight
 
----
-
-## Build & Run
-
-### 1. Clone the repository
-```bash
-git clone https://github.com/deo2407/http_server.git
-cd http_server/src
-
